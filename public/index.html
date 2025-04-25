@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+</head>
+<body>
+    <h1>WebSocket Chat</h1>
+    <div id="chat">
+        <!-- Username input -->
+        <div id="username-container" style="display: block;">
+            <label for="username">Your Username:</label>
+            <input type="text" id="username" placeholder="Enter your username">
+            <button id="set-username-btn">Set Username</button>
+        </div>
+
+        <!-- Chat messages area -->
+        <ul id="messages"></ul>
+
+        <!-- Message sending area -->
+        <div id="input-container">
+            <input type="text" id="input-message" placeholder="Type your message" disabled>
+            <button id="send-btn" disabled>Send</button>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket connection
+        const socket = new WebSocket('ws://localhost:7000');
+        
+        let username = '';
+        const messagesList = document.getElementById('messages');
+        const inputMessage = document.getElementById('input-message');
+        const sendBtn = document.getElementById('send-btn');
+        const setUsernameBtn = document.getElementById('set-username-btn');
+        const usernameInput = document.getElementById('username');
+        const usernameContainer = document.getElementById('username-container');
+
+        // When WebSocket connection opens
+        socket.onopen = () => {
+            console.log("Connected to WebSocket!");
+        };
+
+        // Listening for messages from the WebSocket
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'system') {
+                addMessage(data.message, 'system');
+            } else if (data.type === 'message') {
+                addMessage(`${data.sender}: ${data.message} (${data.timestamp})`, 'user');
+            }
+        };
+
+        // Set username
+        setUsernameBtn.addEventListener('click', function () {
+            username = usernameInput.value.trim();
+            if (username !== '') {
+                socket.send(username); // Send username to the server
+                usernameContainer.style.display = 'none'; // Hide the username input section
+                inputMessage.disabled = false;
+                sendBtn.disabled = false;
+            } else {
+                alert('Please enter a valid username!');
+            }
+        });
+
+        // Send message
+        sendBtn.addEventListener('click', function () {
+            const message = inputMessage.value.trim();
+            if (message !== '') {
+                socket.send(message); // Send message to the server
+                inputMessage.value = ''; // Clear the input field
+            }
+        });
+
+        // Function to add messages to the chat
+        function addMessage(message, type) {
+            const li = document.createElement('li');
+            li.textContent = message;
+            li.classList.add('message', type);
+            messagesList.appendChild(li);
+            messagesList.scrollTop = messagesList.scrollHeight; // Scroll to the latest message
+        }
+    </script>
+</body>
+</html>
